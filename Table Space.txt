@@ -1,0 +1,109 @@
+select *  from dba_tables where table_name like '%PRODUCT%'
+
+
+SELECT DISTINCT 'zz', df.tablespace_name, SUM (df.BYTES) "Total Bytes", MAX( fs.total_bytes) "Bytes Free", 
+(MAX(fs.total_bytes)/SUM (df.BYTES))*100 "% Free" 
+FROM SYS.dba_data_files df, SYS.dba_free_space_coalesced fs 
+WHERE ((df.tablespace_name = fs.tablespace_name)) 
+GROUP BY df.tablespace_name 
+ORDER BY df.tablespace_name
+
+
+select TABLESPACE_NAME, FILE_NAME,AUTOEXTENSIBLE,MAXBYTES from dba_Data_files where TABLESPACE_NAME like 'SYSTEM%'; 
+
+
+
+select * 
+from
+    database_properties 
+where
+    property_name like '%TABLESPACE';
+
+
+
+SELECT owner,
+segment_name,
+segment_type,
+tablespace_name,
+bytes/1048576 MB,
+initial_extent,
+next_extent,
+extents,
+pct_increase
+FROM
+DBA_SEGMENTS
+WHERE
+OWNER = 'SYS' AND
+SEGMENT_NAME = 'PRODUCT' AND
+SEGMENT_TYPE = 'TABLE'
+
+
+select
+   a.TABLESPACE_NAME,
+   round(avail,1) curr_size_MB,
+   round(used,1) used_MB,
+   round(total,1) Maxsize_MB,
+   round(free+extentable_MB,1) "Free+extendable_MB",
+   round(100*(1-(free+extentable_MB)/total),1)"Usage %"
+from (
+      select
+        TABLESPACE_NAME,
+        sum(BYTES)/(1024*1024) avail,
+        sum(MAXBYTES)/(1024*1024) total,
+        (sum(MAXBYTES)/(1024*1024) - sum(BYTES)/(1024*1024)) extentable_MB
+      from dba_data_files
+      group by TABLESPACE_NAME) a,
+     (
+      select
+         TABLESPACE_NAME,
+         sum(BYTES)/(1024*1024) free
+      from dba_free_space group by TABLESPACE_NAME) b,
+     (
+      select
+         TABLESPACE_NAME,
+         BYTES/(1024*1024) Used
+      from sm$ts_used) c
+where a.TABLESPACE_NAME=b.TABLESPACE_NAME and
+      a.TABLESPACE_NAME=c.TABLESPACE_NAME  and
+      a.TABLESPACE_NAME='DATA'
+order by 4 DESC;
+
+Output:
+
+
+
+The below query is to check the all tablespaces usage details in the db
+
+set lines 300
+col TABLESPACE_NAME for a30
+col file_name for a45
+select 
+   a.TABLESPACE_NAME,
+   round(avail,1) curr_size_MB,
+   round(used,1) used_MB,
+   round(total,1) Maxsize_MB,
+   round(free+extentable_MB,1) "Free+extendable_MB", 
+   round(100*(1-(free+extentable_MB)/total),1)"Usage %" 
+from (
+      select 
+        TABLESPACE_NAME,
+        sum(BYTES)/(1024*1024) avail,
+        sum(MAXBYTES)/(1024*1024) total,
+        (sum(MAXBYTES)/(1024*1024) - sum(BYTES)/(1024*1024)) extentable_MB 
+      from dba_data_files 
+      group by TABLESPACE_NAME) a,
+     (
+      select 
+         TABLESPACE_NAME,
+         sum(BYTES)/(1024*1024) free 
+      from dba_free_space group by TABLESPACE_NAME) b,
+     (
+      select 
+         TABLESPACE_NAME,
+         BYTES/(1024*1024) Used 
+      from sm$ts_used) c 
+where a.TABLESPACE_NAME=b.TABLESPACE_NAME and 
+      a.TABLESPACE_NAME=c.TABLESPACE_NAME 
+order by 4 DESC;
+
+
